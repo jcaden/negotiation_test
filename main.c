@@ -7,6 +7,16 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
 #define PROCESSING_DATA "processing-data"
 
+static gboolean use_queue;
+
+static GOptionEntry entries[] = {
+  {
+    "use-queue", 'q', 0, G_OPTION_ARG_NONE, &use_queue, "Use a queue for testing",
+    NULL
+  },
+  {NULL}
+};
+
 static GMainLoop *loop;
 static guint error;
 
@@ -119,13 +129,13 @@ new_sample (GstElement * appsink, gpointer target_caps)
 }
 
 static void
-execute_test (int count)
+execute_test (int count, gboolean use_queue)
 {
   guint timeout_id;
   gchar *name = g_strdup_printf ("negotiation_test_%d", count);
   GstElement *pipeline = gst_pipeline_new (name);
   GstElement *audiotestsrc = gst_element_factory_make ("audiotestsrc", NULL);
-//   GstElement *queue = gst_element_factory_make ("queue", NULL);
+  GstElement *queue;
   GstElement *sink = gst_element_factory_make ("appsink", "sink");
   GstCaps *caps = gst_caps_from_string ("audio/x-raw,rate=3000");
 
@@ -150,8 +160,14 @@ execute_test (int count)
   g_object_set (sink, "caps", caps, NULL);
   gst_caps_unref (caps);
 
-  gst_bin_add_many (GST_BIN (pipeline), audiotestsrc, /*queue, */sink, NULL);
-  gst_element_link_many (audiotestsrc, /*queue, */sink, NULL);
+  if (use_queue) {
+    queue = gst_element_factory_make ("queue", NULL);
+    gst_bin_add_many (GST_BIN (pipeline), audiotestsrc, queue, sink, NULL);
+    gst_element_link_many (audiotestsrc, queue, sink, NULL);
+  } else {
+    gst_bin_add_many (GST_BIN (pipeline), audiotestsrc, sink, NULL);
+    gst_element_link (audiotestsrc, sink);
+  }
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
@@ -174,6 +190,8 @@ execute_test (int count)
 int
 main(int argc, char ** argv)
 {
+  GOptionContext *context;
+  GError *gerror = NULL;
   int count = 1;
 
   error = 0;
@@ -183,11 +201,24 @@ main(int argc, char ** argv)
   GST_DEBUG_CATEGORY_INIT (GST_CAT_DEFAULT, GST_DEFAULT_NAME, 0,
       GST_DEFAULT_NAME);
 
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, entries, NULL);
+  g_option_context_add_group (context, gst_init_get_option_group () );
+
+  if (!g_option_context_parse (context, &argc, &argv, &gerror) ) {
+    GST_ERROR ("option parsing failed: %s\n", gerror->message);
+    g_option_context_free (context);
+    g_error_free (gerror);
+    return 1;
+  }
+
+  g_option_context_free (context);
+
   loop = g_main_loop_new (NULL, TRUE);
 
   while (count > 0 && !g_atomic_int_get (&error)) {
     GST_INFO ("Executing %d times", count);
-    execute_test (count++);
+    execute_test (count++, use_queue);
   }
 
   g_main_loop_unref (loop);
