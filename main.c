@@ -9,6 +9,33 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
 #define TIMES 1000000
 
+/**
+   This program runs a test continously until it fails or it is executed 1
+  million times.
+
+   This test creates a simple pipeline and forces caps renegotiation once the
+  GST_MESSAGE_STREAM_START is received on bus. It terminates correctly if the
+  appsink receives a buffer with the renegotiated format.
+
+  If option -q is given, the pipeline is this:
+
+    --------------      -------      ---------
+   | audiotestsrc | -> | queue | -> | appsink |
+    --------------      -------      ---------
+
+   This test frequently fails, because audiotestsrc receive a not negotiated
+  error while pushing a buffer.
+
+   If -q option is not present the pipeline is this:
+
+    --------------      ---------
+   | audiotestsrc | -> | appsink |
+    --------------      ---------
+
+    This pipeline works propertly and renegotiates correctly.
+
+ */
+
 static gboolean use_queue;
 
 static GOptionEntry entries[] = {
