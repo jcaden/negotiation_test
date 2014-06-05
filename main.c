@@ -36,6 +36,31 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
  */
 
+#define INFO_STRING "\n\n"                                                        \
+"  This program runs a test continously until it fails or it is executed 1\n"   \
+" million times.\n"                                                             \
+"\n"                                                                            \
+"  This test creates a simple pipeline and forces caps renegotiation once the\n"\
+" GST_MESSAGE_STREAM_START is received on bus. It terminates correctly if the\n"\
+" appsink receives a buffer with the renegotiated format.\n"                    \
+"\n"                                                                            \
+" If option -q is given, the pipeline is this:\n"                               \
+"\n"                                                                            \
+"   --------------      -------      ---------\n"                               \
+"  | audiotestsrc | -> | queue | -> | appsink |\n"                              \
+"   --------------      -------      ---------\n"                               \
+"\n"                                                                            \
+"  This test frequently fails, because audiotestsrc receive a not negotiated\n" \
+" error while pushing a buffer.\n"                                              \
+"\n"                                                                            \
+"  If -q option is not present the pipeline is this:\n"                         \
+"\n"                                                                            \
+"   --------------      ---------\n"                                            \
+"  | audiotestsrc | -> | appsink |\n"                                           \
+"   --------------      ---------\n"                                            \
+"\n"                                                                            \
+"   This pipeline works propertly and renegotiates correctly.\n"
+
 static gboolean use_queue;
 
 static GOptionEntry entries[] = {
@@ -230,7 +255,7 @@ main(int argc, char ** argv)
   GST_DEBUG_CATEGORY_INIT (GST_CAT_DEFAULT, GST_DEFAULT_NAME, 0,
       GST_DEFAULT_NAME);
 
-  context = g_option_context_new ("");
+  context = g_option_context_new (INFO_STRING);
   g_option_context_add_main_entries (context, entries, NULL);
   g_option_context_add_group (context, gst_init_get_option_group () );
 
