@@ -7,6 +7,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
 #define PROCESSING_DATA "processing-data"
 
+#define TIMES 1000000
+
 static gboolean use_queue;
 
 static GOptionEntry entries[] = {
@@ -192,7 +194,7 @@ main(int argc, char ** argv)
 {
   GOptionContext *context;
   GError *gerror = NULL;
-  int count = 1;
+  int count = 0;
 
   error = 0;
 
@@ -216,7 +218,7 @@ main(int argc, char ** argv)
 
   loop = g_main_loop_new (NULL, TRUE);
 
-  while (count > 0 && !g_atomic_int_get (&error)) {
+  while (count < TIMES && !g_atomic_int_get (&error)) {
     GST_INFO ("Executing %d times", count);
     execute_test (count++, use_queue);
   }
