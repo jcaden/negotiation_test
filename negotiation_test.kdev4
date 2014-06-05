@@ -1,0 +1,4 @@
+[Project]
+Name=negotiation_test
+Manager=KDevCMakeManager
+VersionControl=kdevgit
