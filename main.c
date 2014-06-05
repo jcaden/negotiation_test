@@ -90,14 +90,14 @@ bus_message (GstBus * bus, GstMessage * msg, gpointer pipe)
       break;
     }
     case GST_MESSAGE_EOS:
-      GST_INFO ("Received eos event");
+      GST_DEBUG ("Received eos event");
       g_main_loop_quit (loop);
       break;
     case GST_MESSAGE_STREAM_START:{
       GstElement *sink;
       GstPad *sink_pad;
 
-      GST_INFO ("Stream start");
+      GST_DEBUG ("Stream start");
       sink = gst_bin_get_by_name (GST_BIN (pipe), "sink");
       sink_pad = gst_element_get_static_pad (sink, "sink");
 
@@ -219,8 +219,8 @@ main(int argc, char ** argv)
   loop = g_main_loop_new (NULL, TRUE);
 
   while (count < TIMES && !g_atomic_int_get (&error)) {
-    GST_INFO ("Executing %d times", count);
     execute_test (count++, use_queue);
+    GST_INFO ("Executed %d times", count);
   }
 
   g_main_loop_unref (loop);
