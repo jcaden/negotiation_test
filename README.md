@@ -17,7 +17,7 @@ negotiation_test
 ```
 
   This test frequently fails  (1 on 15?), because audiotestsrc receive a
-  not negotiated error while pushing a buffer or because no buffer whith
+  not negotiated error while pushing a buffer or because no buffer with
   the new format is received.
 
    If -q option is not present the pipeline is this:
