@@ -10,7 +10,7 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define TIMES 1000000
 
 /**
-   This program runs a test continously until it fails or it is executed 1
+   This program runs a test continuously until it fails or it is executed 1
   million times.
 
    This test creates a simple pipeline and forces caps renegotiation once the
@@ -36,8 +36,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 
  */
 
-#define INFO_STRING "\n\n"                                                        \
-"  This program runs a test continously until it fails or it is executed 1\n"   \
+#define INFO_STRING "\n\n"                                                      \
+"  This program runs a test continuously until it fails or it is executed 1\n"  \
 " million times.\n"                                                             \
 "\n"                                                                            \
 "  This test creates a simple pipeline and forces caps renegotiation once the\n"\
