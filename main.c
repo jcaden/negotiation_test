@@ -10,8 +10,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define TIMES 1000000
 
 /**
-   This program runs a test continuously until it fails or it is executed 1
-  million times.
+   This program runs a test continuously until it fails or it is executed a
+  number of times selected by the used with -n option (1000000 by default).
 
    This test creates a simple pipeline and forces caps renegotiation once the
   GST_MESSAGE_STREAM_START is received on bus. It terminates correctly if the
@@ -37,8 +37,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
  */
 
 #define INFO_STRING "\n\n"                                                      \
-"  This program runs a test continuously until it fails or it is executed 1\n"  \
-" million times.\n"                                                             \
+"  This program runs a test continuously until it fails or it is executed a\n"  \
+" number of times selected by the used with -n option (1000000 by default).\n"  \
 "\n"                                                                            \
 "  This test creates a simple pipeline and forces caps renegotiation once the\n"\
 " GST_MESSAGE_STREAM_START is received on bus. It terminates correctly if the\n"\
@@ -62,11 +62,16 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 "   This pipeline works propertly and renegotiates correctly.\n"
 
 static gboolean use_queue;
+static gint times = TIMES;
 
 static GOptionEntry entries[] = {
   {
     "use-queue", 'q', 0, G_OPTION_ARG_NONE, &use_queue, "Use a queue for testing",
     NULL
+  },
+  {
+    "number-times", 'n', 0, G_OPTION_ARG_INT, &times,
+        "Number of times the test is executed", NULL
   },
   {NULL}
 };
@@ -270,7 +275,7 @@ main(int argc, char ** argv)
 
   loop = g_main_loop_new (NULL, TRUE);
 
-  while (count < TIMES && !g_atomic_int_get (&error)) {
+  while (count < times && !g_atomic_int_get (&error)) {
     execute_test (count++, use_queue);
     GST_INFO ("Executed %d times", count);
   }
