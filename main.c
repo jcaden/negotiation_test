@@ -93,7 +93,7 @@ timeout_check (gpointer pipeline)
   g_atomic_int_set (&error, 1);
   g_main_loop_quit (loop);
 
-  return FALSE;
+  return G_SOURCE_CONTINUE;
 }
 
 static GstPadProbeReturn
