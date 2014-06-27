@@ -106,18 +106,23 @@ sink_pad_blocked (GstPad * pad, GstPadProbeInfo * info, gpointer sink)
     return GST_PAD_PROBE_PASS;
   }
 
-  GST_DEBUG ("Pad blocked");
-  g_object_set_data (G_OBJECT (pad), PROCESSING_DATA, GINT_TO_POINTER (TRUE));
+  if ((GST_PAD_PROBE_INFO_TYPE (info) & GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM) &&
+        (GST_EVENT_TYPE (info->data) == GST_EVENT_CAPS)) {
+    GST_DEBUG ("Pad blocked");
+    g_object_set_data (G_OBJECT (pad), PROCESSING_DATA, GINT_TO_POINTER (TRUE));
 
-  caps = gst_caps_from_string ("audio/x-raw,rate=40000");
-  g_object_set (sink, "caps", caps, NULL);
-  gst_caps_unref (caps);
+    caps = gst_caps_from_string ("audio/x-raw,rate=40000");
+    g_object_set (sink, "caps", caps, NULL);
+    gst_caps_unref (caps);
 
-  /* Force reconfiguration */
-  gst_pad_push_event (pad, gst_event_new_reconfigure());
-  GST_DEBUG ("Pad blocked");
+    /* Force reconfiguration */
+    gst_pad_push_event (pad, gst_event_new_reconfigure());
+    GST_DEBUG ("Pad blocked");
 
-  return GST_PAD_PROBE_REMOVE;
+    return GST_PAD_PROBE_REMOVE;
+  }
+
+  return GST_PAD_PROBE_PASS;
 }
 
 static void
@@ -150,20 +155,6 @@ bus_message (GstBus * bus, GstMessage * msg, gpointer pipe)
       GST_DEBUG ("Received eos event");
       g_main_loop_quit (loop);
       break;
-    case GST_MESSAGE_STREAM_START:{
-      GstElement *sink;
-      GstPad *sink_pad;
-
-      GST_DEBUG ("Stream start");
-      sink = gst_bin_get_by_name (GST_BIN (pipe), "sink");
-      sink_pad = gst_element_get_static_pad (sink, "sink");
-
-      gst_pad_add_probe (sink_pad, GST_PAD_PROBE_TYPE_BLOCK, sink_pad_blocked, g_object_ref (sink), g_object_unref);
-
-      g_object_unref (sink_pad);
-      g_object_unref (sink);
-      break;
-    }
     default:
       break;
   }
@@ -196,6 +187,7 @@ execute_test (int count, gboolean use_queue)
   GstElement *audiotestsrc = gst_element_factory_make ("audiotestsrc", NULL);
   GstElement *queue;
   GstElement *sink = gst_element_factory_make ("appsink", "sink");
+  GstPad *sink_pad = gst_element_get_static_pad (sink, "sink");
   GstCaps *caps = gst_caps_from_string ("audio/x-raw,rate=3000");
 
   GstBus *bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
@@ -207,6 +199,9 @@ execute_test (int count, gboolean use_queue)
     g_atomic_int_set (&error, 1);
     return;
   }
+
+  gst_pad_add_probe (sink_pad, GST_PAD_PROBE_TYPE_BLOCK, sink_pad_blocked, g_object_ref (sink), g_object_unref);
+  g_object_unref (sink_pad);
 
   gst_bus_add_signal_watch (bus);
   g_signal_connect (bus, "message", G_CALLBACK (bus_message), pipeline);
