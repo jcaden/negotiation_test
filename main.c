@@ -61,6 +61,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 "\n"                                                                            \
 "   This pipeline works propertly and renegotiates correctly.\n"
 
+static int block_count;
+
 static gboolean use_queue;
 static gint times = TIMES;
 
@@ -96,29 +98,34 @@ timeout_check (gpointer pipeline)
   return G_SOURCE_CONTINUE;
 }
 
+static void
+renegotiate (GstPad * pad, gpointer sink)
+{
+  GstCaps * caps;
+
+  GST_DEBUG ("Pad blocked");
+  g_object_set_data (G_OBJECT (pad), PROCESSING_DATA, GINT_TO_POINTER (TRUE));
+
+  caps = gst_caps_from_string ("audio/x-raw,rate=40000");
+  g_object_set (sink, "caps", caps, NULL);
+  gst_caps_unref (caps);
+
+  /* Force reconfiguration */
+  gst_pad_push_event (pad, gst_event_new_reconfigure());
+  GST_DEBUG ("Pad blocked");
+}
+
 static GstPadProbeReturn
 sink_pad_blocked (GstPad * pad, GstPadProbeInfo * info, gpointer sink)
 {
-  GstCaps *caps;
-
   if (g_object_get_data (G_OBJECT (pad), PROCESSING_DATA)) {
     GST_DEBUG ("Already processing");
     return GST_PAD_PROBE_PASS;
   }
 
-  if ((GST_PAD_PROBE_INFO_TYPE (info) & GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM) &&
-        (GST_EVENT_TYPE (info->data) == GST_EVENT_CAPS)) {
-    GST_DEBUG ("Pad blocked");
-    g_object_set_data (G_OBJECT (pad), PROCESSING_DATA, GINT_TO_POINTER (TRUE));
-
-    caps = gst_caps_from_string ("audio/x-raw,rate=40000");
-    g_object_set (sink, "caps", caps, NULL);
-    gst_caps_unref (caps);
-
-    /* Force reconfiguration */
-    gst_pad_push_event (pad, gst_event_new_reconfigure());
-    GST_DEBUG ("Pad blocked");
-
+  if (g_atomic_int_dec_and_test(&block_count)) {
+    GST_WARNING ("Blocking: %" GST_PTR_FORMAT, info->data);
+    renegotiate (pad, sink);
     return GST_PAD_PROBE_REMOVE;
   }
 
@@ -270,9 +277,16 @@ main(int argc, char ** argv)
 
   loop = g_main_loop_new (NULL, TRUE);
 
-  while (count < times && !g_atomic_int_get (&error)) {
+  while (count < times) {
+    g_atomic_int_set (&error, 0);
+    g_atomic_int_set (&block_count, count + 1);
     execute_test (count++, use_queue);
     GST_INFO ("Executed %d times", count);
+    if (g_atomic_int_get (&error)) {
+      GST_ERROR ("Test terminated with error");
+    } else {
+      GST_INFO ("Test terminated correctly");
+    }
   }
 
   g_main_loop_unref (loop);
